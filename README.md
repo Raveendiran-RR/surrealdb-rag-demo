@@ -2,6 +2,8 @@
 
 A Retrieval-Augmented Generation (RAG) chatbot that analyzes your WhatsApp conversations using vector embeddings and LLMs.
 
+inspired by  [https://github.com/surrealdb/langchain-surrealdb/tree/main/examples/graphrag-travel-group-chat]
+
 ## Requirements
 
 - **Python 3.14** (specified in `.python-version`)
