@@ -7,18 +7,86 @@ from langchain_ollama import OllamaEmbeddings, ChatOllama
 from langchain_core.messages import HumanMessage, AIMessage
 from nicegui import ui
 from typing import List
+import requests
+import time
+
+# Configuration for Embeddings and LLM
+# Embeddings: Ollama (port 11434) - Docker Model Runner doesn't support embedding models
+# LLM: Docker Model Runner (port 12434) - for chat/generation models
+EMBEDDING_SERVER_URL = "http://localhost:11434"
+LLM_SERVER_URL = "http://localhost:12434"
+EMBEDDING_MODEL = "all-minilm:22m"
+LLM_MODEL = "ai/llama3.2:3B-Q4_0"
+
+# Wait for servers to be ready
+print("⏳ Waiting for Ollama and Docker Model Runner to be ready...")
+max_retries = 30
+
+# Check Ollama (for embeddings)
+print("Checking Ollama (embeddings)...")
+retries = 0
+while retries < max_retries:
+    try:
+        response = requests.get(f"{EMBEDDING_SERVER_URL}/api/tags", timeout=2)
+        if response.status_code == 200:
+            print("✓ Ollama is ready")
+            break
+    except requests.exceptions.RequestException:
+        pass
+    retries += 1
+    time.sleep(1)
+
+if retries == max_retries:
+    print("❌ Ollama is not responding.")
+    print("Please ensure Ollama is running:")
+    print("  Option 1: Install Ollama from https://ollama.ai")
+    print("  Option 2: Run 'ollama serve' in a terminal")
+    exit(1)
+
+# Check Docker Model Runner (for LLM)
+print("Checking Docker Model Runner (LLM)...")
+retries = 0
+while retries < max_retries:
+    try:
+        response = requests.get(f"{LLM_SERVER_URL}/api/tags", timeout=2)
+        if response.status_code == 200:
+            print("✓ Docker Model Runner is ready")
+            break
+    except requests.exceptions.RequestException:
+        pass
+    retries += 1
+    time.sleep(1)
+
+if retries == max_retries:
+    print("❌ Docker Model Runner is not responding.")
+    print("Please ensure Docker Model Runner is enabled in Docker Desktop:")
+    print("  Settings → Features in development → Enable Docker Model Runner")
+    exit(1)
 
 # Initialize SurrealDB connection
 conn = Surreal("ws://localhost:8000")
 conn.signin({"username": "root", "password": "root"})
 conn.use("whatsapp", "chats")
 
-# Initialize embeddings and vector store
-embeddings = OllamaEmbeddings(model="all-minilm:22m")
+print("✓ Connected to SurrealDB")
+
+# Initialize embeddings using Ollama
+embeddings = OllamaEmbeddings(
+    model=EMBEDDING_MODEL,
+    base_url=EMBEDDING_SERVER_URL
+)
 vector_store = SurrealDBVectorStore(embeddings, conn)
 
-# Initialize LLM for generating answers
-llm = ChatOllama(model="llama3.2:latest", temperature=0.7)
+print(f"✓ Vector store created with {EMBEDDING_MODEL}")
+
+# Initialize LLM using Docker Model Runner
+llm = ChatOllama(
+    model=LLM_MODEL,
+    base_url=LLM_SERVER_URL,
+    temperature=0.7
+)
+
+print(f"✓ LLM initialized ({LLM_MODEL})")
 
 # Chat history
 chat_history: List = []
