@@ -202,6 +202,9 @@ graph LR
 - **Solution**: Check if port 8080 is available
 - Or modify the port in `rag_chat_ui.py`: `ui.run(port=8081)`
 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/dd6a0184-cf62-4704-af8f-dcd9e8807f41" />
+
+
 ## Contributing
 
 We welcome contributions! Here's how you can help:
