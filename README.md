@@ -2,15 +2,47 @@
 
 A Retrieval-Augmented Generation (RAG) chatbot that analyzes your WhatsApp conversations using vector embeddings and LLMs.
 
-inspired by  [https://github.com/surrealdb/langchain-surrealdb/tree/main/examples/graphrag-travel-group-chat]
+## 🏗️ Architecture
 
-## Requirements
+This project uses a **hybrid AI infrastructure**:
+- **Ollama** (port 11434) - For embedding models
+- **Docker Model Runner** (port 12434) - For LLM (chat/generation) models
+- **SurrealDB** - Vector database for storing embeddings
 
-- **Python 3.14** (specified in `.python-version`)
-- **Docker Desktop** with SurrealDB extension installed
-- Ollama with models: `all-minilm:22m` and `llama3.2:latest`
+```mermaid
+graph TB
+    subgraph AI["🤖 AI Infrastructure"]
+        direction LR
+        subgraph Ollama["Ollama Service"]
+            O1["Port: 11434"]
+            O2["Model: all-minilm:22m"]
+            O3["Purpose: Embeddings"]
+        end
+        
+        subgraph DMR["Docker Model Runner"]
+            D1["Port: 12434"]
+            D2["Model: ai/llama3.2:3B-Q4_0"]
+            D3["Purpose: LLM/Chat"]
+        end
+    end
+    
+    App["Python Application<br/>(langchain-ollama)"] -.->|Embedding Requests| Ollama
+    App -.->|LLM Requests| DMR
+    
+    style AI fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style Ollama fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style DMR fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    style App fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+```
 
-## Setup Instructions
+## 📋 Requirements
+
+- **Python 3.14+**
+- **Docker Desktop** with Docker Model Runner enabled
+- **Ollama** installed and running
+- **SurrealDB** running via Docker Desktop Extension
+
+## 🚀 Setup Instructions
 
 ### 1. Create Virtual Environment
 ```bash
@@ -30,20 +62,65 @@ pip install -r requirements.txt
 3. Select a chat and choose "Without Media"
 4. Save the file as `whatsappChatExport.txt` in the project directory
 
-### 4. Start SurrealDB via Docker Desktop
+### 4. Install and Start Ollama (for Embeddings)
+
+Docker Model Runner doesn't support embedding models yet, so we use Ollama for embeddings.
+
+**Option 1: Install Ollama Desktop App**
+1. Download from [https://ollama.ai](https://ollama.ai)
+2. Install and run the app
+3. Pull the embedding model:
+   ```bash
+   ollama pull all-minilm:22m
+   ```
+
+**Option 2: Run Ollama in Terminal**
+```bash
+# Install Ollama (if not already installed)
+# Visit https://ollama.ai for installation instructions
+
+# Start Ollama server
+ollama serve
+
+# In another terminal, pull the model
+ollama pull all-minilm:22m
+```
+
+### 5. Enable Docker Model Runner (for LLM)
+
+Docker Model Runner will handle the LLM (chat/generation) models.
+
+1. Open **Docker Desktop**
+2. Go to **Settings** → **Features in development**
+3. Enable **Docker Model Runner**
+4. Restart Docker Desktop if prompted
+
+### 6. Pull LLM Model
+
+```bash
+# Pull the LLM model for chat/generation
+docker model pull ai/llama3.2:3B-Q4_0
+```
+
+To verify the model is available:
+```bash
+docker model ls
+```
+
+### 7. Start SurrealDB via Docker Desktop
 1. Open **Docker Desktop**
 2. Go to **Extensions**
 3. Find and start **SurrealDB** extension
 4. Ensure it's running on `ws://localhost:8000`
 
-### 5. Load WhatsApp Messages into SurrealDB
+### 8. Load WhatsApp Messages into SurrealDB
 ```bash
 ./venv/bin/python load_whatsapp.py
 ```
 
 You should see: `✓ Loaded X messages into SurrealDB`
 
-## Usage
+## 💻 Usage
 
 ### Quick Start (Recommended)
 ```bash
@@ -84,33 +161,40 @@ Then open your browser to: **http://localhost:8080**
 - Confidence scores
 - Quick testing without web browser
 
-### Demo: Simple RAG Example
-```bash
-./venv/bin/python simple_rag.py
-```
-
-Quick demo with sample conversations
-
-## Project Files
+## 📁 Project Files
 
 - `load_whatsapp.py` - Loads WhatsApp messages into SurrealDB
 - `rag_chat_interactive.py` - Terminal-based interactive chat
 - `rag_chat_ui.py` - Web UI with NiceGUI frontend
-- `simple_rag.py` - Demo with sample data
 - `whatsappChatExport.txt` - Your exported WhatsApp chat
 - `requirements.txt` - Python dependencies
 
-## Environment Details
+## 🔧 Configuration
+
+### Current Setup
+```python
+# Embeddings: Ollama (port 11434)
+EMBEDDING_SERVER_URL = "http://localhost:11434"
+EMBEDDING_MODEL = "all-minilm:22m"
+
+# LLM: Docker Model Runner (port 12434)
+LLM_SERVER_URL = "http://localhost:12434"
+LLM_MODEL = "ai/llama3.2:3B-Q4_0"
+```
+
+### Environment Details
 
 - **Python Version**: 3.14.2
 - **Main Dependencies**:
   - `langchain-community` - LLM framework
-  - `langchain-ollama` - Local LLM integration
+  - `langchain-ollama` - Ollama-compatible API integration
   - `surrealdb` - Vector database
   - `nicegui` - Web UI framework
-  - `ollama` - LLM integration
+- **AI Infrastructure**:
+  - Ollama - Embedding model serving (port 11434)
+  - Docker Model Runner - LLM serving (port 12434)
 
-## How It Works
+## 🔄 How It Works
 
 1. **Load**: WhatsApp messages are parsed and stored in SurrealDB with embeddings
 2. **Search**: User questions are converted to vectors and searched against stored messages
@@ -122,14 +206,14 @@ Quick demo with sample conversations
 ```mermaid
 graph TD
     A["📱 WhatsApp Chat Export"] -->|Parse & Extract| B["📝 Raw Messages"]
-    B -->|Embed with all-minilm:22m| C["🔢 Vector Embeddings"]
+    B -->|Embed with Ollama<br/>all-minilm| C["🔢 Vector Embeddings"]
     C -->|Store| D["🗄️ SurrealDB<br/>Vector Store"]
     
     E["👤 User Question"] -->|Embed| F["🔢 Query Vector"]
     F -->|Similarity Search<br/>k=3| D
     D -->|Retrieve Top Matches| G["📚 Relevant Context<br/>+ Metadata"]
     
-    G -->|With Context| H["🤖 Ollama LLM<br/>llama3.2:latest"]
+    G -->|With Context| H["🤖 Docker Model Runner<br/>ai/llama3.2"]
     H -->|Generate Answer| I["💬 AI Response"]
     
     I -->|Display with<br/>Citations| J["🌐 NiceGUI Web Interface<br/>or Terminal"]
@@ -145,8 +229,8 @@ sequenceDiagram
     participant User
     participant UI as NiceGUI<br/>Web Interface
     participant VectorStore as SurrealDB<br/>Vector Store
-    participant Embedder as Ollama<br/>Embeddings
-    participant LLM as Ollama<br/>LLM Model
+    participant Embedder as Ollama<br/>Embeddings (11434)
+    participant LLM as Docker Model Runner<br/>LLM (12434)
 
     User->>UI: Ask a question
     UI->>Embedder: Convert question to vector
@@ -171,10 +255,10 @@ graph LR
     end
     
     subgraph "AI Layer"
-        D["Question"] -->|Embedding| E["all-minilm:22m"]
+        D["Question"] -->|Embedding| E["Ollama<br/>all-minilm"]
         C -->|Vector<br/>Search| F["Similarity<br/>Match"]
         E -.-> F
-        F -->|Context| G["llama3.2:latest<br/>LLM"]
+        F -->|Context| G["Docker Model Runner<br/>ai/llama3.2"]
     end
     
     subgraph "Interface Layer"
@@ -183,29 +267,128 @@ graph LR
     end
 ```
 
+## 🐛 Troubleshooting
 
-## Troubleshooting
+### Ollama Not Responding
+```bash
+# Check if Ollama is running
+curl http://localhost:11434/api/tags
 
-**Issue**: Connection refused to SurrealDB (ws://localhost:8000)
+# If not running, start it
+ollama serve
+
+# Verify models
+ollama list
+```
+
+### Docker Model Runner Not Responding
+```bash
+# Check if enabled in Docker Desktop
+# Settings → Features in development → Docker Model Runner
+
+# Verify models
+docker model ls
+
+# Test endpoint
+curl http://localhost:12434/api/tags
+```
+
+### Error: `{"error": "unknown error"}`
+
+This usually means incorrect model name format. Make sure you're using:
+- **Ollama models**: `model-name:tag` (e.g., `all-minilm:22m`)
+- **Docker Model Runner**: `ai/model-name:tag` (e.g., `ai/llama3.2:3B-Q4_0`)
+
+### Connection Refused to SurrealDB
 - **Solution**: Make sure Docker Desktop is running and SurrealDB extension is started
   - Open Docker Desktop → Extensions → SurrealDB → Start
 
-**Issue**: `ModuleNotFoundError` when running scripts
+### `ModuleNotFoundError` when running scripts
 - **Solution**: Make sure virtual environment is activated: `source venv/bin/activate`
 - Or use full path: `./venv/bin/python script.py`
 
-**Issue**: "No relevant information found"
+### "No relevant information found"
 - **Solution**: Make sure WhatsApp messages are loaded first
 - Run: `./venv/bin/python load_whatsapp.py`
 
-**Issue**: Web UI won't start
+### Web UI won't start
 - **Solution**: Check if port 8080 is available
 - Or modify the port in `rag_chat_ui.py`: `ui.run(port=8081)`
 
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/dd6a0184-cf62-4704-af8f-dcd9e8807f41" />
+## 📊 Port Reference
 
+| Service | Port | Purpose | Model |
+|---------|------|---------|-------|
+| **Ollama** | 11434 | Embeddings | `all-minilm:22m` |
+| **Docker Model Runner** | 12434 | LLM/Chat | `ai/llama3.2:3B-Q4_0` |
+| **SurrealDB** | 8000 | Vector DB | N/A |
+| **Web UI** | 8080 | Interface | N/A |
 
-## Contributing
+## 🔍 Verify Your Setup
+
+### Check All Services
+```bash
+# 1. Check Ollama
+curl http://localhost:11434/api/tags
+
+# 2. Check Docker Model Runner
+curl http://localhost:12434/api/tags
+
+# 3. Check SurrealDB (should be running in Docker Desktop)
+# Look for SurrealDB in Docker Desktop Extensions
+
+# 4. List available models
+ollama list
+docker model ls
+```
+
+### Test Embeddings
+```bash
+curl http://localhost:11434/api/embeddings -d '{
+  "model": "all-minilm:22m",
+  "prompt": "test"
+}'
+```
+
+### Test LLM
+```bash
+curl http://localhost:12434/api/generate -d '{
+  "model": "ai/llama3.2:3B-Q4_0",
+  "prompt": "Hello",
+  "stream": false
+}'
+```
+
+## 🎯 Alternative Models
+
+### Embedding Models (Ollama)
+```bash
+# Lightweight, fast (recommended)
+ollama pull all-minilm:22m
+
+# High quality embeddings
+ollama pull nomic-embed-text
+
+# Large embedding model
+ollama pull mxbai-embed-large
+```
+
+### LLM Models (Docker Model Runner)
+```bash
+# Meta's Llama 3.2 (recommended)
+docker model pull ai/llama3.2:3B-Q4_0
+
+# Coding assistant
+docker model pull ai/qwen2.5-coder
+
+# Microsoft's Phi-3
+docker model pull ai/phi3
+
+# Small, fast model
+docker model pull ai/smollm2
+```
+
+## 🤝 Contributing
 
 We welcome contributions! Here's how you can help:
 
@@ -258,6 +441,27 @@ When reporting bugs, include:
 
 Open an issue with the label `question` or start a discussion.
 
-## License
+## 📝 License
 
 MIT
+
+---
+
+## 📚 Additional Resources
+
+- [Ollama Documentation](https://ollama.ai)
+- [Docker Model Runner Documentation](https://docs.docker.com/ai/model-runner/)
+- [SurrealDB Documentation](https://surrealdb.com/docs)
+- [LangChain Documentation](https://python.langchain.com/)
+
+## 🎉 Quick Tips
+
+1. **First time setup**: Allow 10-15 minutes for model downloads
+2. **Performance**: Embeddings are fast, LLM responses may take 5-30 seconds
+3. **Model size**: Larger models = better quality but slower responses
+4. **Context**: The system retrieves top 3 most relevant messages for context
+5. **Privacy**: Everything runs locally - your data never leaves your machine
+
+---
+
+**Made with ❤️ using Ollama, Docker Model Runner, and SurrealDB**
