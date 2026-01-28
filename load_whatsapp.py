@@ -2,26 +2,26 @@ import warnings
 warnings.filterwarnings("ignore", message=".*Pydantic V1.*")
 from surrealdb import Surreal
 from langchain_surrealdb.vectorstores import SurrealDBVectorStore
-from langchain_ollama import OllamaEmbeddings
+from docker_model_runner_embeddings import DockerModelRunnerEmbeddings
 from langchain_core.documents import Document
 import requests
 import time
 
 # Configuration for Embeddings and LLM
-# Embeddings: Ollama (port 11434) - Docker Model Runner doesn't support embedding models
-# LLM: Docker Model Runner (port 12434) - for chat/generation models
-EMBEDDING_SERVER_URL = "http://localhost:11434"
-EMBEDDING_MODEL = "all-minilm:22m"
+# Both using Docker Model Runner (port 12434)
+# Using OpenAI-compatible API for embeddings
+EMBEDDING_SERVER_URL = "http://localhost:12434"
+EMBEDDING_MODEL = "embeddinggemma"
 
-# Wait for Ollama embedding server to be ready
-print("⏳ Waiting for Ollama embedding server to be ready...")
+# Wait for Docker Model Runner to be ready
+print("⏳ Waiting for Docker Model Runner to be ready...")
 max_retries = 30
 retries = 0
 while retries < max_retries:
     try:
         response = requests.get(f"{EMBEDDING_SERVER_URL}/api/tags", timeout=2)
         if response.status_code == 200:
-            print("✓ Ollama embedding server is ready")
+            print("✓ Docker Model Runner is ready")
             break
     except requests.exceptions.RequestException:
         pass
@@ -29,21 +29,20 @@ while retries < max_retries:
     time.sleep(1)
 
 if retries == max_retries:
-    print("❌ Ollama is not responding.")
-    print("Please ensure Ollama is running:")
-    print("  Option 1: Install Ollama from https://ollama.ai")
-    print("  Option 2: Run 'ollama serve' in a terminal")
+    print("❌ Docker Model Runner is not responding.")
+    print("Please ensure Docker Model Runner is enabled in Docker Desktop:")
+    print("  Settings → Features in development → Enable Docker Model Runner")
     exit(1)
 
 # Initialize SurrealDB connection
-conn = Surreal("ws://localhost:8000")
+conn = Surreal("ws://localhost:8002")
 conn.signin({"username": "root", "password": "root"})
 conn.use("whatsapp", "chats")
 
 print("✓ Connected to SurrealDB")
 
-# Initialize embeddings using Ollama
-embeddings = OllamaEmbeddings(
+# Initialize embeddings using Docker Model Runner (OpenAI-compatible API)
+embeddings = DockerModelRunnerEmbeddings(
     model=EMBEDDING_MODEL,
     base_url=EMBEDDING_SERVER_URL
 )
