@@ -420,6 +420,7 @@ MIT
 ## 📚 Additional Resources
 
 
+- [Install the SurrealDB Docker Desktop Extension](https://open.docker.com/extensions/marketplace?extensionId=raveendiranrr/surrealdb-docker-extension)
 - [Docker Model Runner Documentation](https://docs.docker.com/ai/model-runner/)
 - [SurrealDB Documentation](https://surrealdb.com/docs)
 - [LangChain Documentation](https://python.langchain.com/)
