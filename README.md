@@ -185,7 +185,7 @@ SURREALDB_URL = "ws://localhost:8002"
 ```mermaid
 graph TD
     A["📱 WhatsApp Chat Export"] -->|Parse & Extract| B["📝 Raw Messages"]
-    B -->|Embed with DMR<br/>embeddinggemma (768D)| C["🔢 Vector Embeddings"]
+    B -->|Embed with DMR<br/>embeddinggemma 768D| C["🔢 Vector Embeddings"]
     C -->|Store| D["🗄️ SurrealDB (8002)<br/>Vector Store"]
     
     E["👤 User Question"] -->|Embed| F["🔢 Query Vector"]
