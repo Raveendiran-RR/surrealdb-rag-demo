@@ -180,6 +180,9 @@ SURREALDB_URL = "ws://localhost:8002"
 3. **Generate**: Relevant messages are used as context for the LLM
 4. **Answer**: LLM generates an answer with source citations
 
+<img width="1920" height="1080" alt="Screenshot 2026-01-28 at 12 51 13 AM" src="https://github.com/user-attachments/assets/9237de74-6800-4087-ae29-6b2fc3117553" />
+
+
 ### Architecture Diagram
 
 ```mermaid
@@ -416,7 +419,7 @@ MIT
 
 ## 📚 Additional Resources
 
-- [Ollama Documentation](https://ollama.ai)
+
 - [Docker Model Runner Documentation](https://docs.docker.com/ai/model-runner/)
 - [SurrealDB Documentation](https://surrealdb.com/docs)
 - [LangChain Documentation](https://python.langchain.com/)
