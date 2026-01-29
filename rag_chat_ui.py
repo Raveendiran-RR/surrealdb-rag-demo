@@ -102,31 +102,49 @@ def search_and_answer(question: str) -> tuple:
 
 Please answer this question: {question}
 
-Provide a concise and helpful answer."""
+Provide a concise and helpful answer in plain text. Do not use JSON format or function calls. Just provide the answer as natural conversational text."""
     
     # Generate answer with format='json' disabled to get plain text
     response = llm.invoke([HumanMessage(content=prompt)])
     
     # Extract the actual text content from the response
+    answer = None
+    
     if hasattr(response, 'content'):
-        answer = response.content
+        content = response.content
+        print(f"DEBUG: Response content type: {type(content)}")
+        print(f"DEBUG: Response content: {content[:200] if isinstance(content, str) else content}")
+        
         # If content is still a dict/JSON, try to extract text
-        if isinstance(answer, dict):
-            answer = str(answer)
-        elif isinstance(answer, str) and answer.startswith('{'):
-            # It's a JSON string, extract the actual message
-            import json
-            try:
-                parsed = json.loads(answer)
-                if 'parameters' in parsed and 's' in parsed['parameters']:
-                    answer = parsed['parameters']['s']
-                else:
-                    answer = str(parsed)
-            except:
-                pass
+        if isinstance(content, dict):
+            # Direct dict response
+            if 'parameters' in content and isinstance(content['parameters'], dict):
+                answer = content['parameters'].get('s', str(content))
+            else:
+                answer = str(content)
+        elif isinstance(content, str):
+            # Check if it's a JSON string
+            if content.strip().startswith('{'):
+                import json
+                try:
+                    parsed = json.loads(content)
+                    # Handle tool call format: {"name": "print", "parameters": {"s": "actual text"}}
+                    if 'parameters' in parsed and isinstance(parsed['parameters'], dict):
+                        answer = parsed['parameters'].get('s', str(parsed))
+                    else:
+                        answer = str(parsed)
+                except json.JSONDecodeError:
+                    # Not valid JSON, use as-is
+                    answer = content
+            else:
+                # Plain text
+                answer = content
+        else:
+            answer = str(content)
     else:
         answer = str(response)
     
+    print(f"DEBUG: Final answer: {answer[:200] if isinstance(answer, str) else answer}")
     return answer, sources
 
 def send_message() -> None:
