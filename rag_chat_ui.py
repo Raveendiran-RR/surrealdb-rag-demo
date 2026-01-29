@@ -60,7 +60,8 @@ print(f"✓ Vector store created with {EMBEDDING_MODEL}")
 llm = ChatOllama(
     model=LLM_MODEL,
     base_url=LLM_SERVER_URL,
-    temperature=0.7
+    temperature=0.7,
+    format=""  # Disable JSON/tool mode, force plain text responses
 )
 
 print(f"✓ LLM initialized ({LLM_MODEL})")
@@ -103,9 +104,30 @@ Please answer this question: {question}
 
 Provide a concise and helpful answer."""
     
-    # Generate answer
+    # Generate answer with format='json' disabled to get plain text
     response = llm.invoke([HumanMessage(content=prompt)])
-    return response.content, sources
+    
+    # Extract the actual text content from the response
+    if hasattr(response, 'content'):
+        answer = response.content
+        # If content is still a dict/JSON, try to extract text
+        if isinstance(answer, dict):
+            answer = str(answer)
+        elif isinstance(answer, str) and answer.startswith('{'):
+            # It's a JSON string, extract the actual message
+            import json
+            try:
+                parsed = json.loads(answer)
+                if 'parameters' in parsed and 's' in parsed['parameters']:
+                    answer = parsed['parameters']['s']
+                else:
+                    answer = str(parsed)
+            except:
+                pass
+    else:
+        answer = str(response)
+    
+    return answer, sources
 
 def send_message() -> None:
     """Handle sending a message"""
